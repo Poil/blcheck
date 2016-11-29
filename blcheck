@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # title             : blcheck
 # description       : Test any domain against more then 200 black lists.
@@ -147,12 +147,18 @@
     REGEX_DOMAIN='\([a-zA-Z0-9]\+\(-[a-zA-Z0-9]\+\)*\.\)\+[a-zA-Z]\{2,\}'
     REGEX_TDL='\([a-zA-Z0-9]\+\(-[a-zA-Z0-9]\+\)*\.\)[a-zA-Z]\{2,\}$'
 
-    # Colors
-    RED=$(tput setaf 1)
-    GREEN=$(tput setaf 2)
-    YELLOW=$(tput setaf 3)
-    CLEAR=$(tput sgr0)
-
+    if [[ $- == *i* ]]; then
+        # Colors
+        RED=$(tput setaf 1)
+        GREEN=$(tput setaf 2)
+        YELLOW=$(tput setaf 3)
+        CLEAR=$(tput sgr0)
+    else
+        RED="\e[31m"
+        GREEN="\e[32m"
+        YELLOW="\e[33m"
+        CLEAR="\e[39m"
+    fi
     # Define spinner
     SPINNER="-\|/"
     #SPINNER=".oO@*"
@@ -176,28 +182,37 @@
     VERBOSE=0
     info() {
         if [ $VERBOSE -ge "$1" ]; then
-            echo "$2"
+            if [[ $- == *i* ]]; then
+                echo "$2"
+            else
+                echo -e  "$2";
+            fi
         fi
     }
 
     # Error handling
     error() {
-        echo "ERROR: $1" >&2
+        if [[ $- == *i* ]]; then
+            echo "ERROR: $1" >&2
+        else
+            echo -e "ERROR: $1" >&2
+        fi
         exit 2
     }
 
     # Show progres
     progress() {
+        if [[ $- == *i* ]]; then
+            # Bar
+            x=$(($1 % ${#SPINNER} + 1))
+            BAR=$(echo $SPINNER | awk "{ print substr(\$0, ${x}, 1) }")
+            if test -z "$PLAIN"; then
+                printf "\r ";
+            fi
 
-        # Bar
-        x=$(($1 % ${#SPINNER} + 1))
-        BAR=$(echo $SPINNER | awk "{ print substr(\$0, ${x}, 1) }")
-        if test -z "$PLAIN"; then
-            printf "\r ";
+            # BAR as printf arg so that backslash will be litteraly interpreted
+            printf "[ %s %3s%% ] checking... %4s / $2  " "$BAR" $(($1 * 100 / $2)) "$1";
         fi
-
-        # BAR as printf arg so that backslash will be litteraly interpreted
-        printf "[ %s %3s%% ] checking... %4s / $2  " "$BAR" $(($1 * 100 / $2)) "$1";
     }
 
     # Resolve the IP
